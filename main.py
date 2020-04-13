@@ -36,22 +36,6 @@ class User:
             v='5.95'
         )
 
-    # def get_info(self):
-    #     """
-    #     инфа о пользователе
-    #     :return:
-    #     """
-    #     params = self.get_params()
-    #     response = requests.get(
-    #         'https://api.vk.com/method/users.get',
-    #         params
-    #     )
-    #     self.user_id = response.json()['response'][0]['id']
-    #     self.first_name = response.json()['response'][0]['first_name']
-    #     self.last_name = response.json()['response'][0]['last_name']
-    #     print('-')
-    #     return response.json()
-
     def get_friends(self):
         """
         инфа о друзьях main-пользователя - счетчик и список ID по возрастанию
@@ -65,7 +49,7 @@ class User:
         )
         self.friend_counter = response.json()['response']['count']  # кол-во друзей у пользователя
         self.friend_list = response.json()['response']['items']  # список друзей у main-пользователя
-        print('-')
+        print(f'Всего друзей: {self.friend_counter}')
         return response.json()
 
     def get_main_groups(self):
@@ -82,11 +66,11 @@ class User:
         )
         self.group_counter = response.json()['response']['count']  # кол-во групп у main-пользователя
         self.group_list = response.json()['response']['items']  # список групп main-пользователя
-        print('-')
+        print(f'В скольких группах состоит: {self.group_counter}')
         time.sleep(0.3)
         return response.json()
 
-    def groups_is_member(self):
+    def groups_is_member(self,group):
         """
         Проверка - друзья пользователя в указанной группе?
         :return:
@@ -103,7 +87,7 @@ class User:
         time.sleep(0.4)
         return response.json()
 
-    def groups_get_by_id(self):
+    def groups_get_by_id(self, group):
         """
         инфо про группы (название)
 
@@ -117,10 +101,10 @@ class User:
             params
         )
         print('-')
-        time.sleep(0.35)
+        time.sleep(0.4)
         return response.json()
 
-    def groups_get_members(self):
+    def groups_get_members(self, group):
         """
         метод возвращает список участников сообщества - отсюда берем их количество
         :return:
@@ -132,8 +116,30 @@ class User:
             params
         )
         print('-')
-        time.sleep(0.35)
+        time.sleep(0.4)
         return response.json()
+
+
+def get_group_list():
+    # про вхождение в группу
+    groups = list()
+    for group in username.group_list:
+        group_counter = 0
+        group_return = username.groups_is_member(group)['response']
+        for items in group_return:
+            if items.get('member') == 1:
+                group_counter += 1
+                break
+        if group_counter == 0:
+            gid = group
+            name = username.groups_get_by_id(group)['response'][0]['name']
+            members_count = username.groups_get_members(group)['response']['count']
+            group_info = {'name': name, 'gid': gid, 'members_count': members_count}
+            groups.append(group_info)
+    with open('groups.json', 'w', encoding='utf-8') as f:
+        json.dump(groups, f, ensure_ascii=False)
+    print('Результат в файле groups.json')
+    return
 
 
 def list_to_string():
@@ -149,43 +155,12 @@ def list_to_string():
 
 
 username = User(TOKEN)
-# username.get_info()
-
-
 main_username = 'eshmargunov'
 main_user_id = 171691064
 
 
-# про друзей пользователя
+# друзья пользователя
 username.get_friends()
-print(f'Всего друзей: {username.friend_counter}')
-
-
-# про группы пользователя
+# группы пользователя
 username.get_main_groups()
-print(f'В скольких группах состоит: {username.group_counter}')
-
-
-# про вхождение в группу
-groups = list()
-for group in username.group_list:
-    group_counter = 0
-    group_return = username.groups_is_member()['response']
-    for items in group_return:
-        if items.get('member') == 1:
-            group_counter += 1
-            break
-    if group_counter == 0:
-        gid = group
-        name = username.groups_get_by_id()['response'][0]['name']
-        members_count = username.groups_get_members()['response']['count']
-        group_info = {'name': name, 'gid': gid, 'members_count': members_count}
-        groups.append(group_info)
-#  Этот кусок не получилось сделать отдельной функцией
-
-
-with open('groups.json', 'w', encoding='utf-8') as f:
-    json.dump(groups, f, ensure_ascii=False)
-
-
-print('Результат в файле groups.json')
+get_group_list()
